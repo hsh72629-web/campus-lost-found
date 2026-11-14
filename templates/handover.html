@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, empty_state %}
+{% block title %}Handover management · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Handover management</h1><p>Hand over only after ownership is verified and the claim is approved.</p></div></div>
+
+  <div class="card card-flush" style="margin-bottom:1.2rem">
+    <div class="card-head"><h3>{{ icon('clipboard', 20) }} Ready for handover</h3></div>
+    {% if ready %}<div class="card-body stack">
+      {% for r in ready %}
+      <form class="grid g4" method="post" action="{{ url_for('confirm_handover', claim_id=r.claim_id) }}" style="align-items:end;padding-bottom:1rem;border-bottom:1px solid var(--line)">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div><b>{{ r.name }}</b> <span class="code">{{ r.code }}</span><br><span class="muted small">For {{ r.claimant_name }} · {{ r.storage_location or 'College office' }}</span></div>
+        <div class="field" style="margin:0"><label>Receiver USN</label><input type="text" name="receiver_usn" required maxlength="15" style="text-transform:uppercase"></div>
+        <div class="field" style="margin:0"><label>Officer ID</label><input type="text" name="officer_id" required maxlength="20" style="text-transform:uppercase"></div>
+        <button class="btn btn-success" type="submit">{{ icon('check', 18) }} Confirm Handover</button>
+      </form>{% endfor %}</div>
+    {% else %}<div class="card-body"><p class="muted" style="margin:0">No approved claims are waiting for handover.</p></div>{% endif %}
+  </div>
+
+  <div class="card card-flush" style="margin-bottom:1.2rem">
+    <div class="card-head"><h3>{{ icon('hand', 20) }} Handover confirmed, waiting for the owner to receive it</h3></div>
+    {% if confirmed %}<div class="card-body stack">
+      {% for h in confirmed %}
+      <form class="grid g3" method="post" action="{{ url_for('mark_received', handover_id=h.id) }}" style="align-items:center">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div><b>{{ h.name }}</b> <span class="code">{{ h.code }}</span><br><span class="muted small">Receiver {{ h.receiver_usn }} · Officer {{ h.officer_id }}</span></div>
+        <label class="check"><input type="checkbox" name="physical"> The owner physically received the item</label>
+        <button class="btn btn-success" type="submit">{{ icon('check-circle', 18) }} Mark Received by Owner</button>
+      </form>{% endfor %}</div>
+    {% else %}<div class="card-body"><p class="muted" style="margin:0">Nothing is waiting.</p></div>{% endif %}
+  </div>
+
+  <div class="card card-flush">
+    <div class="card-head"><h3>{{ icon('file', 20) }} Handover history</h3></div>
+    {% if history %}<div class="table-wrap"><table>
+      <thead><tr><th>Record</th><th>Item</th><th>Finder USN</th><th>Receiver USN</th><th>Officer</th><th>Date</th><th>Status</th><th></th></tr></thead>
+      <tbody>{% for h in history %}<tr><td class="code">{{ h.receipt_id }}</td><td><b>{{ h.name }}</b> <span class="code">{{ h.code }}</span></td><td>{{ h.finder_usn or '-' }}</td><td>{{ h.receiver_usn }}</td><td>{{ h.officer_id }}</td><td>{{ h.handover_date }} {{ h.handover_time }}</td><td><span class="badge b-green-solid">{{ h.final_status }}</span></td>
+        <td><a class="btn btn-ghost btn-sm" href="{{ url_for('record_detail', code=h.code) }}">Full record</a></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="card-body">{% call empty_state('file', 'No handovers yet', 'Completed handovers will be listed here.') %}{% endcall %}</div>{% endif %}
+  </div>
+
+  <div class="card card-flush" style="margin-top:1.2rem">
+    <div class="card-head"><h3>{{ icon('message', 20) }} Direct exchanges (finder to owner)</h3></div>
+    {% if exchanges %}<div class="table-wrap"><table>
+      <thead><tr><th>Found item</th><th>Lost report</th><th>Finder</th><th>Owner</th><th>Started</th><th>Status</th></tr></thead>
+      <tbody>{% for x in exchanges %}<tr><td><b>{{ x.found_name }}</b> <span class="code">{{ x.found_code }}</span></td><td><span class="code">{{ x.lost_code }}</span></td>
+        <td>{{ x.finder_name }} <span class="muted small">{{ x.finder_usn }}</span></td><td>{{ x.owner_name }} <span class="muted small">{{ x.owner_usn }}</span></td>
+        <td>{{ x.created_at|nice_dt }}</td><td><span class="badge {{ 'b-green-solid' if x.status == 'Completed' else ('b-red' if x.status == 'Declined' else 'b-orange') }}">{{ x.status }}</span>{% if x.completed_at %}<br><span class="muted small">{{ x.completed_at|nice_dt }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="card-body"><p class="muted" style="margin:0">No direct exchanges yet. Students can hand an item to its owner themselves from the chat.</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

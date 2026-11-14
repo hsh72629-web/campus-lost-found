@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Campus Lost & Found AI Matcher{% endblock %}
+{% block content %}
+<section class="home">
+  <div class="container home-in">
+    <span class="home-mark">{{ icon('search', 34) }}</span>
+    <h1 class="home-title">Campus Lost &amp; Found <span>AI Matcher</span></h1>
+    <p class="home-tag">Find Lost Items. Connect Students. Verify. Recover.</p>
+    <p class="home-sub">Lost something on campus? Let AI help you find it.</p>
+  </div>
+</section>
+
+<section class="container choices" aria-label="Choose how to continue">
+  <a class="choice choice-user" href="{{ url_for('login') }}">
+    <span class="choice-ico">{{ icon('user', 34) }}</span>
+    <h2>User</h2>
+    <p>For students. Report a lost or found item and let the AI find the match.</p>
+    <span class="btn btn-primary">Continue as User</span>
+  </a>
+  <a class="choice choice-admin" href="{{ url_for('admin_login') }}">
+    <span class="choice-ico">{{ icon('shield', 34) }}</span>
+    <h2>Admin</h2>
+    <p>For college office staff. Receive items, verify owners and hand over.</p>
+    <span class="btn btn-navy">Continue as Admin</span>
+  </a>
+</section>
+
+<p class="home-note container">The AI only suggests matches. College staff always verify ownership before an item is handed over.</p>
+{% endblock %}

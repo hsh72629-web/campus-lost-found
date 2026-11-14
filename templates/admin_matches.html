@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, empty_state %}
+{% block title %}AI matches · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>AI matches</h1><p>{{ rows|length }} potential match{{ '' if rows|length == 1 else 'es' }}. Suggestions only. Staff verify ownership.</p></div>
+    <div class="row">
+      <form method="get" class="row" role="search"><input type="search" name="q" value="{{ q }}" placeholder="Search matches" style="width:220px" aria-label="Search matches"><button class="btn btn-ghost" type="submit">{{ icon('search', 18) }} Search</button></form>
+      <form method="post" action="{{ url_for('admin_recalculate') }}" data-confirm="Recalculate all matches now?"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn btn-navy" type="submit">{{ icon('refresh', 18) }} Recalculate all</button></form></div></div>
+  {% if rows %}<div class="stack">{% include "_match_cards.html" %}</div>
+  {% else %}{% call empty_state('sparkle', 'No potential matches', 'Matches appear automatically when a lost and a found report look alike.') %}{% endcall %}{% endif %}
+</div>
+{% endblock %}

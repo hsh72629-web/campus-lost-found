@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, type_badge, empty_state %}
+{% block title %}All reports · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>All reports</h1><p>{{ items|length }} record{{ '' if items|length == 1 else 's' }} shown</p></div></div>
+  <form class="card filters" method="get" style="margin-bottom:1.4rem" role="search">
+    <div class="field"><label for="q">Search</label><input id="q" type="search" name="q" value="{{ args.get('q','') }}" placeholder="Name, category, location, Item ID"></div>
+    <div class="field"><label>Type</label><select name="type"><option value="">All</option><option value="lost" {{ 'selected' if args.get('type')=='lost' }}>Lost</option><option value="found" {{ 'selected' if args.get('type')=='found' }}>Found</option></select></div>
+    <div class="field"><label>Status</label><select name="status"><option value="">Any status</option>{% for s in STATUSES %}<option {{ 'selected' if args.get('status')==s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Category</label><select name="category"><option value="">Any</option>{% for c in CATEGORIES %}<option {{ 'selected' if args.get('category')==c }}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="field"><label>From date</label><input type="date" name="date_from" value="{{ args.get('date_from','') }}"></div>
+    <div class="field"><label>To date</label><input type="date" name="date_to" value="{{ args.get('date_to','') }}"></div>
+    <div class="row"><select name="sort" aria-label="Sort"><option value="newest">Newest</option><option value="oldest" {{ 'selected' if args.get('sort')=='oldest' }}>Oldest</option></select><button class="btn btn-primary" type="submit">Apply</button></div>
+  </form>
+  {% if items %}
+  <div class="card card-flush"><div class="table-wrap"><table>
+    <thead><tr><th>Item ID</th><th>Type</th><th>Item</th><th>Category</th><th>Location</th><th>Date</th><th>Reporter</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for i in items %}<tr>
+      <td class="code">{{ i.item_id }}</td><td>{{ type_badge(i.report_type) }}</td><td><b>{{ i.name }}</b></td><td>{{ i.category }}</td><td>{{ i.location }}</td>
+      <td>{{ i.date_reported|nice_dt }}</td><td>{{ i.reporter_name }}</td><td>{{ badge(i.status) }}</td>
+      <td class="row">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('item_details', code=i.item_id) }}">View</a>
+        {% if i.report_type == 'found' and i.status in ('Found Reported','Potential Match','Enquiry Started') %}<a class="btn btn-primary btn-sm" href="{{ url_for('office_register', item_id=i.item_id) }}">Mark Reached Office</a>{% endif %}
+      </td></tr>{% endfor %}</tbody></table></div></div>
+  {% else %}
+    {% call empty_state('box', 'No reports to show', 'Reports appear here as soon as students submit them, or when you register an item at the office.') %}
+      <a class="btn btn-primary" href="{{ url_for('office_register') }}">Register office item</a>{% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

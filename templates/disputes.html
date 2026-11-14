@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, empty_state %}
+{% block title %}Disputes · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Disputes and complaints</h1><p>Record notes and review item history. A rejected claim is never treated as an accusation.</p></div></div>
+  {% if rows %}<div class="stack">
+    {% for d in rows %}
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><div><h3 style="margin:0">{{ d.name }} <span class="code">{{ d.code }}</span></h3><span class="muted small">Opened {{ d.created_at|nice_dt }} · was “{{ d.previous_status }}”</span></div>
+        <div class="row"><span class="badge {{ 'b-red' if d.status == 'Open' else 'b-green' }}">{{ d.status }}</span><a class="btn btn-ghost btn-sm" href="{{ url_for('item_details', code=d.code) }}">Review item history</a>
+        {% if d.claim_id %}<a class="btn btn-ghost btn-sm" href="{{ url_for('verification_detail', claim_id=d.claim_id) }}">View claim</a>{% endif %}</div></div>
+      <p style="white-space:pre-wrap;margin:1rem 0">{{ d.notes }}</p>
+      {% if d.status == 'Open' %}
+      <form method="post" class="grid g3" style="align-items:end">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field" style="margin:0"><label>Officer ID</label><input type="text" name="officer_id" required maxlength="20" style="text-transform:uppercase"></div>
+        <div class="field" style="margin:0;grid-column:span 2"><label>Note</label><input type="text" name="notes" required maxlength="500" placeholder="What was reviewed or decided"></div>
+        <div class="row" style="grid-column:1/-1">
+          <button class="btn btn-ghost btn-sm" type="submit" formaction="{{ url_for('dispute_action', dispute_id=d.id, action='note') }}">Add note</button>
+          <button class="btn btn-success btn-sm" type="submit" formaction="{{ url_for('dispute_action', dispute_id=d.id, action='resolve') }}">Resolve dispute</button></div>
+      </form>{% endif %}
+    </div>{% endfor %}</div>
+  {% else %}{% call empty_state('gavel', 'No disputes', 'Items you mark as disputed will be tracked here with notes and history.') %}{% endcall %}{% endif %}
+
+  {% if rejected %}
+  <div class="card card-flush" style="margin-top:1.4rem"><div class="card-head"><h3>Rejected claims for reference</h3></div><div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Claimant</th><th>Claimed</th><th></th></tr></thead>
+    <tbody>{% for c in rejected %}<tr><td><b>{{ c.name }}</b> <span class="code">{{ c.code }}</span></td><td>{{ c.claimant_name }}</td><td>{{ c.claim_date|nice_dt }}</td><td><a class="btn btn-ghost btn-sm" href="{{ url_for('verification_detail', claim_id=c.id) }}">Open</a></td></tr>{% endfor %}</tbody></table></div></div>
+  {% endif %}
+</div>
+{% endblock %}

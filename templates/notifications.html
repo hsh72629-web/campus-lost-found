@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, empty_state, report_buttons %}
+{% block title %}Notifications · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Notifications</h1><p>Matches, messages, deposits and claim updates.</p></div>
+    {% if notes %}<form method="post" action="{{ url_for('notifications_read') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="all"><button class="btn btn-ghost" type="submit">{{ icon('check', 18) }} Mark all as read</button></form>{% endif %}
+  </div>
+  {% if notes %}
+  <div class="card card-flush">
+    {% for n in notes %}
+    <form method="post" action="{{ url_for('notifications_read') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ n.id }}">
+      <button class="note {{ 'unread' if not n.is_read }}" type="submit"><span class="dot"></span><span><b style="font-weight:{{ 500 if n.is_read else 700 }}">{{ n.message }}</b><br><span class="muted small">{{ n.created_at|nice_dt }}{% if n.link %} · Tap to open{% endif %}</span></span></button>
+    </form>
+    {% endfor %}
+  </div>
+  {% else %}
+    {% call empty_state('bell', 'You are all caught up', 'Alerts about matches, messages and handovers will show up here.') %}{% if me.role == 'student' %}{{ report_buttons() }}{% endif %}{% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

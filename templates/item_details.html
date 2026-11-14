@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, type_badge, thumb %}
+{% block title %}{{ item.name }} · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <p class="small"><a href="{{ url_for('admin_items' if is_admin else 'my_reports') }}">Back</a></p>
+  <div class="page-head">
+    <div>
+      <div class="row">{{ type_badge(item.report_type) }} {{ badge(item.status) }} <span class="code">{{ item.item_id }}</span></div>
+      <h1 style="margin-top:.5rem">{{ item.name }}</h1>
+    </div>
+    <div class="row">
+      {% if can_edit %}<a class="btn btn-ghost" href="{{ url_for('edit_item', code=item.item_id) }}">{{ icon('edit', 18) }} Edit report</a>{% endif %}
+      {% if can_claim %}<a class="btn btn-warn" href="{{ url_for('claim_item', code=item.item_id) }}">{{ icon('shield', 18) }} Claim this item</a>{% endif %}
+      {% if my_claim %}<a class="btn btn-ghost" href="{{ url_for('claim_status', claim_id=my_claim.id) }}">View my claim</a>{% endif %}
+      {% if is_admin and office %}<a class="btn btn-ghost" href="{{ url_for('record_detail', code=item.item_id) }}">{{ icon('file', 18) }} Full record</a>{% endif %}
+      {% if is_admin and item.report_type == 'found' and item.status in ('Found Reported','Potential Match','Enquiry Started') %}
+        <a class="btn btn-primary" href="{{ url_for('office_register', item_id=item.item_id) }}">{{ icon('building', 18) }} Mark Reached Office</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid split">
+    <div class="stack">
+      <div class="card">
+        <div class="grid g2" style="align-items:start">
+          <div class="detail-img">{{ thumb(item.image_path, 48) }}</div>
+          <dl class="dl" style="grid-template-columns:110px 1fr">
+            {% if is_admin %}<dt>Category</dt><dd>{{ item.category }}</dd>{% endif %}
+            <dt>Color</dt><dd>{{ item.color or 'Not given' }}</dd>
+            <dt>Brand</dt><dd>{{ item.brand or 'Not given' }}</dd>
+            <dt>College logo</dt><dd>{{ item.college_logo }}</dd>
+            <dt>{{ 'Lost at' if item.report_type == 'lost' else 'Found at' }}</dt><dd>{{ item.location }}</dd>
+            <dt>Date</dt><dd>{{ item.date_reported|nice_dt }}</dd>
+            {% if office %}<dt>Stored at</dt><dd>{{ office.storage_location }}</dd>{% endif %}
+          </dl>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:1.2rem 0">
+        <h3>Description</h3><p>{{ item.description }}</p>
+        {% if show_features %}
+          <h3>Distinctive features</h3><p>{{ item.distinctive_features or 'None entered.' }}</p>
+        {% else %}
+          <div class="notice">{{ icon('lock', 18) }}<span class="small">Distinctive features of found items are hidden. Staff compare them with what a claimant describes.</span></div>
+        {% endif %}
+      </div>
+
+      {% if is_reporter or is_admin %}
+      <div class="card">
+        <h3>{{ icon('lock', 20) }} Private details</h3>
+        <p>{{ item.private_identifying_details or 'None entered.' }}</p>
+        <p class="muted small" style="margin:0">Visible only to the reporter and college staff.</p>
+      </div>
+      <div class="card card-flush">
+        <div class="card-head"><h3>{{ icon('sparkle', 20) }} AI matches ({{ matches|length }})</h3>{% if matches and not is_admin %}<a class="small" href="{{ url_for('matches_page', item=item.item_id) }}">Open full results</a>{% endif %}</div>
+        <div class="card-body">
+          {% if matches %}<div class="stack">{% set rows = matches %}{% include "_match_cards.html" %}</div>
+          {% else %}<p class="muted" style="margin:0">No potential matches yet. They are recalculated whenever a new report arrives.</p>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="stack">
+      {% if is_admin %}
+      <div class="card">
+        <h3>{{ icon('user', 20) }} Reporter (staff only)</h3>
+        <dl class="dl" style="grid-template-columns:100px 1fr">
+          <dt>Name</dt><dd>{{ reporter.name }}</dd>
+          <dt>USN</dt><dd>{{ reporter.usn or 'Staff entry' }}</dd>
+          {% if item.report_type == 'found' %}<dt>Finder USN</dt><dd>{{ item.finder_usn or 'Not recorded' }}</dd>{% endif %}
+        </dl>
+        {% if office %}<hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
+        <dl class="dl" style="grid-template-columns:100px 1fr">
+          <dt>Officer ID</dt><dd>{{ office.officer_id }}</dd><dt>Received</dt><dd>{{ office.received_date }} {{ office.received_time }}</dd><dt>Storage</dt><dd>{{ office.storage_location }}</dd></dl>{% endif %}
+      </div>
+      {% if claims %}
+      <div class="card"><h3>{{ icon('shield', 20) }} Claims</h3>
+        <ul class="list-plain">{% for c in claims %}<li style="justify-content:space-between"><a href="{{ url_for('verification_detail', claim_id=c.id) }}">{{ c.claimant_name }}</a><span class="badge b-orange">{{ c.verification_status }}</span></li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if item.status not in ('Returned to Owner','Disputed') %}
+      <div class="card">
+        <h3>{{ icon('gavel', 20) }} Mark as disputed</h3>
+        <form method="post" action="{{ url_for('dispute_item', code=item.item_id) }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <div class="field"><label>Officer ID</label><input type="text" name="officer_id" required maxlength="20"></div>
+          <div class="field"><label>Note</label><textarea name="notes" required style="min-height:70px" placeholder="Why this item needs a review"></textarea></div>
+          <button class="btn btn-ghost btn-sm" type="submit">Record dispute</button>
+        </form>
+      </div>{% endif %}
+      {% else %}
+      <div class="card"><h3>{{ icon('shield', 20) }} Privacy</h3>
+        <p class="muted small" style="margin:0">Student names, USNs and contact details are never shown on listings. The finder and owner only see each other's USN inside a confirmed match chat.</p></div>
+      {% endif %}
+
+      {% if history %}
+      <div class="card"><h3>{{ icon('clock', 20) }} History</h3>
+        <ul class="list-plain">{% for h in history %}<li><div>{{ h.action }}{% if is_admin and h.detail %}<br><span class="muted small">{{ h.detail }}</span>{% endif %}<br><span class="muted small">{{ h.created_at|nice_dt }}</span></div></li>{% endfor %}</ul></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

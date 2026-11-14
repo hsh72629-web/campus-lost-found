@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container page"><div class="empty" style="margin-top:2rem"><div class="ico">{{ icon('alert', 30) }}</div><h3>{{ title }}</h3><p>{{ message }}</p>
+  <div class="row"><a class="btn btn-primary" href="{{ url_for('index') }}">Go to home</a><a class="btn btn-ghost" href="javascript:history.back()">Go back</a></div></div></div>
+{% endblock %}

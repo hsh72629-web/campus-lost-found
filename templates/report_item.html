@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% set lost = kind == 'lost' %}
+{% block title %}{{ 'Edit' if item else 'Report' }} {{ 'lost' if lost else 'found' }} item · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div>
+    <h1>{{ 'Edit' if item else 'Report a' }} {{ 'lost' if lost else 'found' }} item</h1>
+    <p>{% if lost %}The more detail you add, the better the AI can find it.{% else %}Thank you for helping. Keep identifying marks in the private box so only the true owner can describe them.{% endif %}</p>
+  </div></div>
+
+  <form class="card form-card" method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="field"><label for="name">Item name</label><input id="name" name="name" type="text" required maxlength="80" value="{{ form.get('name','') }}" placeholder="e.g. Steel water bottle"></div>
+    <div class="field"><label for="description">Description</label><textarea id="description" name="description" required maxlength="1000" placeholder="Size, shape, material, what it looks like. Or add a photo below and the AI will write it for you.">{{ form.get('description','') }}</textarea>
+      <div class="hint ai-status" id="ai-status" aria-live="polite">Tip: upload a photo and the AI writes the description for you. You can edit it.</div></div>
+    <div class="grid g2">
+      <div class="field"><label for="color">Color</label><input id="color" name="color" type="text" maxlength="40" value="{{ form.get('color','') }}" placeholder="e.g. Navy blue"></div>
+      <div class="field"><label for="brand">Brand</label><input id="brand" name="brand" type="text" maxlength="60" value="{{ form.get('brand','') }}" placeholder="e.g. Milton, Casio, or none"></div>
+    </div>
+    <div class="grid g2">
+      <div class="field"><label for="college_logo">College logo</label>
+        <select id="college_logo" name="college_logo">
+          {% for v in ['Not sure','Yes','No'] %}<option value="{{ v }}" {{ 'selected' if form.get('college_logo') == v }}>{{ 'Has college logo' if v == 'Yes' else ('No college logo' if v == 'No' else 'Not sure') }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="date_reported">{{ 'Date lost' if lost else 'Date found' }}</label><input id="date_reported" name="date_reported" type="date" required max="{{ today }}" value="{{ form.get('date_reported', '') }}"></div>
+    </div>
+    <div class="field"><label for="location">{{ 'Lost location' if lost else 'Found location' }}</label><input id="location" name="location" type="text" required maxlength="120" value="{{ form.get('location','') }}" placeholder="e.g. Library, second floor reading hall"></div>
+    <div class="field"><label for="distinctive_features">Distinctive features</label><textarea id="distinctive_features" name="distinctive_features" maxlength="500" style="min-height:70px" placeholder="Stickers, scratches, initials, cap type, accessories">{{ form.get('distinctive_features','') }}</textarea>
+      <div class="hint">{% if lost %}Used by the AI to compare reports.{% else %}Used by the AI only. Other students cannot read this on your found item.{% endif %}</div></div>
+
+    <div class="private">
+      <h4>{{ icon('lock', 18) }} Private identifying details</h4>
+      <textarea name="private_identifying_details" maxlength="500" style="min-height:70px" placeholder="{{ 'Something only you would know, e.g. a name written inside' if lost else 'A mark you noticed but will not publish, e.g. initials under the cap' }}">{{ form.get('private_identifying_details','') }}</textarea>
+      <div class="hint">Never shown in listings or search. Only you and college staff can see it. Staff use it during ownership verification.</div>
+    </div>
+
+    <div class="field">
+      <span class="lbl-text">Photo (optional)</span>
+      <div class="upload">
+        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" data-preview="#preview" data-describe="{{ url_for('api_describe_photo') }}" aria-label="Upload photo">
+        <div class="hint">PNG, JPG or WEBP up to 6 MB. You can submit without a photo.</div>
+        <img id="preview" class="{{ '' if item and item.image_path else 'hide' }}" alt="Photo preview" {% if item and item.image_path %}src="{{ url_for('static', filename=item.image_path) }}"{% endif %}>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="field"><label for="usn_field">{{ 'Owner USN' if lost else 'Finder USN' }}</label><input id="usn_field" type="text" value="{{ me.usn }}" readonly><div class="hint">Taken from your account. Never shown to other students.</div></div>
+      {% if not lost %}
+      <div class="field"><span class="lbl-text">Deposit status</span>
+        <label class="check"><input type="checkbox" name="deposited" {{ 'checked' if (form.get('deposit_intent') or form.get('deposited')) }}> I have already deposited this item at the college office</label>
+        <div class="hint">Staff will register it when they receive it.</div></div>
+      {% endif %}
+    </div>
+
+    <div class="row" style="margin-top:.5rem">
+      <button class="btn btn-primary" type="submit">{{ 'Save changes' if item else 'Submit report' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('item_details', code=item.item_id) if item else url_for('dashboard') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

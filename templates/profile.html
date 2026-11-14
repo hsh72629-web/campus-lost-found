@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Profile · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Profile</h1><p>Only you can see this page.</p></div></div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card">
+      <h3>{{ icon('user', 20) }} Account</h3>
+      <dl class="dl" style="grid-template-columns:110px 1fr">
+        <dt>Name</dt><dd>{{ me.name }}</dd>
+        {% if me.usn %}<dt>USN</dt><dd>{{ me.usn }}</dd>{% else %}<dt>Admin ID</dt><dd>{{ me.email }}</dd>{% endif %}
+        <dt>Role</dt><dd>{{ 'Admin' if me.role == 'admin' else 'Student' }}</dd>
+        <dt>Joined</dt><dd>{{ me.created_at|nice_dt }}</dd>
+        {% if me.role == 'student' %}<dt>Reports</dt><dd>{{ counts.lost }} lost · {{ counts.found }} found</dd>{% endif %}
+      </dl>
+    </div>
+    {% if me.role == 'admin' %}
+    <form class="card" method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <h3>{{ icon('key', 20) }} Change admin password</h3>
+      <div class="field"><label>Current password</label><input type="password" name="current_password" required autocomplete="current-password"></div>
+      <div class="field"><label>New password</label><input type="password" name="new_password" required autocomplete="new-password"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" name="confirm_password" required autocomplete="new-password"></div>
+      <button class="btn btn-navy btn-sm" type="submit">Change password</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

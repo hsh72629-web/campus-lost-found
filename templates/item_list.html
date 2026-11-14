@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, item_card, empty_state, report_buttons %}
+{% block title %}My reports · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>My reports</h1><p>Only your own reports are shown here. Other students' items stay private.</p></div><div class="row">{{ report_buttons() }}</div></div>
+  <form class="card" method="get" style="margin-bottom:1.4rem" role="search">
+    <div class="row">
+      <input type="search" name="q" value="{{ args.get('q','') }}" placeholder="Search my reports" style="flex:1;min-width:200px" aria-label="Search">
+      <select name="type" style="width:auto" aria-label="Type"><option value="">Lost and found</option><option value="lost" {{ 'selected' if args.get('type')=='lost' }}>Lost</option><option value="found" {{ 'selected' if args.get('type')=='found' }}>Found</option></select>
+      <button class="btn btn-primary" type="submit">Search</button>
+    </div>
+  </form>
+  {% if items %}<div class="items-grid">{% for i in items %}{{ item_card(i) }}{% endfor %}</div>
+  {% elif args.get('q') or args.get('type') %}
+    {% call empty_state('search', 'No reports match', 'Try a different word.') %}<a class="btn btn-ghost" href="{{ url_for('my_reports') }}">Clear search</a>{% endcall %}
+  {% else %}
+    {% call empty_state('box', 'No reports yet', 'Report a lost or found item to get started.') %}{{ report_buttons() }}{% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

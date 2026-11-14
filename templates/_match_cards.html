@@ -1,0 +1,42 @@
+{# Included by matches.html and item_details.html. Expects `rows` (list of match rows). #}
+{% from "_macros.html" import icon, badge, thumb, score_ring %}
+{% for r in rows %}
+<div class="match">
+  <div class="match-side">
+    <div class="thumb">{{ thumb(r.l_img, 26) }}</div>
+    <div style="min-width:0">
+      <span class="badge type-lost">Lost</span> <span class="code">{{ r.l_code }}</span>
+      <h4>{{ r.l_name }}</h4>
+      <p>{{ r.l_desc[:90] }}{{ '…' if r.l_desc|length > 90 }}</p>
+      <p>{{ icon('pin', 14) }} {{ r.l_loc }} · {{ r.l_date|nice_dt }}</p>
+    </div>
+  </div>
+  <div class="score">
+    {{ score_ring(r.score) }}
+    <span class="badge {{ 'b-green' if r.score >= 0.65 else ('b-orange' if r.score >= 0.4 else 'b-slate') }}">{{ r.score|score_label }} match</span>
+    <span class="muted small" title="Text similarity{% if r.image_score is not none %} and photo similarity{% endif %}">Text {{ r.text_score|pct }}%{% if r.image_score is not none %} · Photo {{ r.image_score|pct }}%{% endif %}</span>
+  </div>
+  <div class="match-side">
+    <div class="thumb">{{ thumb(r.f_img, 26) }}</div>
+    <div style="min-width:0">
+      <span class="badge type-found">Found</span> <span class="code">{{ r.f_code }}</span>
+      <h4>{{ r.f_name }}</h4>
+      <p>{{ r.f_desc[:90] }}{{ '…' if r.f_desc|length > 90 }}</p>
+      <p>{{ icon('pin', 14) }} {{ r.f_loc }} · {{ r.f_date|nice_dt }}</p>
+      <p style="margin-top:.3rem">{{ badge(r.f_status) }}</p>
+    </div>
+  </div>
+  <div class="match-actions">
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('item_details', code=r.l_code) }}">View lost item</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('item_details', code=r.f_code) }}">View found item</a>
+    {% if me.role == 'student' %}
+      {% if r.enquiry_id %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('chat', enquiry_id=r.enquiry_id) }}">{{ icon('message', 16) }} Open chat</a>
+      {% endif %}
+      {% if r.l_rep == me.id and r.f_status in ('Deposited at Office','Claim Rejected','Ownership Verification Pending') %}
+        <a class="btn btn-warn btn-sm" href="{{ url_for('claim_item', code=r.f_code) }}">{{ icon('shield', 16) }} Claim at office</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endfor %}

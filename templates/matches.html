@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, empty_state, report_buttons %}
+{% block title %}AI matches · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div><h1>AI match results</h1><p>Ranked from highest to lowest similarity.</p></div>
+    <form method="get" class="row" role="search"><input type="search" name="q" value="{{ q }}" placeholder="Search potential matches" style="width:240px" aria-label="Search matches">
+      {% if code %}<input type="hidden" name="item" value="{{ code }}">{% endif %}<button class="btn btn-primary" type="submit">{{ icon('search', 18) }} Search</button></form>
+  </div>
+
+  <div class="notice" style="margin-bottom:1rem">{{ icon('info', 20) }}<span><b>AI has identified a potential match. Ownership must be verified by authorized college staff.</b> Scores are suggestions, not proof of ownership.</span></div>
+
+  {% if code %}<p><a href="{{ url_for('matches_page') }}">Show matches for all my items</a></p>{% endif %}
+
+  {% for g in groups %}
+    <div class="group-title">
+      <span class="badge {{ 'type-lost' if g.mine_is_lost else 'type-found' }}">Your {{ 'lost' if g.mine_is_lost else 'found' }} item</span>
+      <h3>{{ g.name }}</h3><span class="code">{{ g.code }}</span>
+    </div>
+    <div class="stack">{% set rows = g.rows %}{% include "_match_cards.html" %}</div>
+  {% else %}
+    {% if q or code %}
+      {% call empty_state('search', 'No matches found', 'No potential matches fit this search.') %}<a class="btn btn-ghost" href="{{ url_for('matches_page') }}">Show all matches</a>{% endcall %}
+    {% else %}
+      {% call empty_state('sparkle', 'No potential matches yet', 'When someone reports a similar lost or found item, the AI will list it here and notify you.') %}{{ report_buttons() }}{% endcall %}
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

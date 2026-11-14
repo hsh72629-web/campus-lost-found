@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Admin dashboard · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>College office dashboard</h1><p>Everything that needs staff attention, from live records.</p></div>
+    <div class="row"><a class="btn btn-primary" href="{{ url_for('office_register') }}">{{ icon('building', 18) }} Receive item</a><a class="btn btn-ghost" href="{{ url_for('verification_list') }}">{{ icon('shield', 18) }} Claims</a><a class="btn btn-ghost" href="{{ url_for('handovers') }}">{{ icon('clipboard', 18) }} Give item</a><a class="btn btn-ghost" href="{{ url_for('records') }}">{{ icon('file', 18) }} Records</a><a class="btn btn-ghost" href="{{ url_for('disputes') }}">{{ icon('gavel', 18) }} Disputes</a><a class="btn btn-ghost" href="{{ url_for('admin_matches') }}">{{ icon('sparkle', 18) }} AI matches</a></div></div>
+
+  <div class="grid g5 stats-grid" style="margin-bottom:1.4rem">
+    <div class="stat"><div class="ico">{{ icon('box', 22) }}</div><div><div class="num">{{ s.total }}</div><div class="lbl">Total reports</div></div></div>
+    <div class="stat"><div class="ico orange">{{ icon('search', 22) }}</div><div><div class="num">{{ s.lost }}</div><div class="lbl">Lost reports</div></div></div>
+    <div class="stat"><div class="ico">{{ icon('hand', 22) }}</div><div><div class="num">{{ s.found }}</div><div class="lbl">Found reports</div></div></div>
+    <div class="stat"><div class="ico">{{ icon('building', 22) }}</div><div><div class="num">{{ s.at_office }}</div><div class="lbl">Held at office</div></div></div>
+    <div class="stat"><div class="ico">{{ icon('sparkle', 22) }}</div><div><div class="num">{{ s.matches }}</div><div class="lbl">AI matches</div></div></div>
+    <div class="stat"><div class="ico orange">{{ icon('shield', 22) }}</div><div><div class="num">{{ s.pending_claims }}</div><div class="lbl">Claims to review</div></div></div>
+    <div class="stat"><div class="ico green">{{ icon('clipboard', 22) }}</div><div><div class="num">{{ s.ready }}</div><div class="lbl">Ready for handover</div></div></div>
+    <div class="stat"><div class="ico green">{{ icon('check-circle', 22) }}</div><div><div class="num">{{ s.returned }}</div><div class="lbl">Returned to owners</div></div></div>
+    <div class="stat"><div class="ico red">{{ icon('gavel', 22) }}</div><div><div class="num">{{ s.disputed }}</div><div class="lbl">Open disputes</div></div></div>
+    <div class="stat"><div class="ico">{{ icon('users', 22) }}</div><div><div class="num">{{ s.students }}</div><div class="lbl">Registered students</div></div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card card-flush">
+      <div class="card-head"><h3>{{ icon('building', 20) }} Finders heading to the office</h3></div>
+      {% if awaiting %}<ul class="list-plain" style="padding:0 1.35rem">{% for a in awaiting %}
+        <li style="justify-content:space-between;align-items:center"><div><b>{{ a.name }}</b> <span class="code">{{ a.item_id }}</span><br><span class="muted small">{{ a.location }}</span></div>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('office_register', item_id=a.item_id) }}">Mark Reached Office</a></li>{% endfor %}</ul>
+      {% else %}<div class="card-body"><p class="muted" style="margin:0">No finders have said they deposited an item. Walk-in items can be registered directly.</p></div>{% endif %}
+    </div>
+    <div class="card card-flush">
+      <div class="card-head"><h3>{{ icon('shield', 20) }} Claims waiting for review</h3></div>
+      {% if pending %}<ul class="list-plain" style="padding:0 1.35rem">{% for c in pending %}
+        <li style="justify-content:space-between;align-items:center"><div><b>{{ c.name }}</b> <span class="code">{{ c.item_id }}</span><br><span class="muted small">{{ c.claim_date|nice_dt }}</span></div>
+        <a class="btn btn-warn btn-sm" href="{{ url_for('verification_detail', claim_id=c.id) }}">Review</a></li>{% endfor %}</ul>
+      {% else %}<div class="card-body"><p class="muted" style="margin:0">No claims are waiting.</p></div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card card-flush" style="margin-top:1.1rem">
+    <div class="card-head"><h3>{{ icon('clock', 20) }} Recent activity</h3></div>
+    {% if activity %}<ul class="list-plain" style="padding:0 1.35rem">{% for a in activity %}<li><div>{{ a.action }}{% if a.item_id %} <span class="code">{{ a.item_id }}</span>{% endif %}<br><span class="muted small">{{ a.created_at|nice_dt }}</span></div></li>{% endfor %}</ul>
+    {% else %}<div class="card-body"><p class="muted" style="margin:0">Activity will appear here as students report items.</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

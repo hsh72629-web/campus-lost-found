@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, thumb, empty_state %}
+{% block title %}Ownership verification · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+{% if claim %}
+  <p class="small"><a href="{{ url_for('verification_list') }}">Back to all claims</a></p>
+  <div class="page-head"><div><h1>Verify ownership</h1><p>{{ item.name }} <span class="code">{{ item.item_id }}</span></p></div>
+    <div class="row">{{ badge(item.status) }} <span class="badge b-orange">Claim: {{ claim.verification_status }}</span></div></div>
+  <div class="notice warn" style="margin-bottom:1rem">{{ icon('alert', 20) }}<span><b>AI similarity never approves a claim.</b> Compare the claimant's private details with the physical item before verifying.</span></div>
+
+  <div class="grid split">
+    <div class="stack">
+      <div class="grid g2">
+        <div class="card"><h3>{{ icon('hand', 20) }} Found item</h3>
+          <div class="detail-img" style="margin-bottom:.8rem">{{ thumb(item.image_path, 40) }}</div>
+          <p><b>Description:</b> {{ item.description }}</p>
+          <p><b>Distinctive features:</b> {{ item.distinctive_features or 'None' }}</p>
+          <p><b>Finder's private details:</b> {{ item.private_identifying_details or 'None' }}</p>
+          {% if office %}<p class="muted small" style="margin:0">Stored at {{ office.storage_location }} · received {{ office.received_date }} {{ office.received_time }}</p>{% endif %}</div>
+        <div class="card"><h3>{{ icon('user', 20) }} Claimant</h3>
+          <dl class="dl" style="grid-template-columns:90px 1fr"><dt>Name</dt><dd>{{ claim.claimant_name }}</dd><dt>USN</dt><dd>{{ claim.claimant_usn }}</dd><dt>Email</dt><dd>{{ claim.claimant_email }}</dd><dt>Claimed</dt><dd>{{ claim.claim_date|nice_dt }}</dd></dl>
+          <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
+          <h3 style="font-size:1rem">Details the claimant gave</h3><p style="white-space:pre-wrap">{{ claim.private_details }}</p>
+          {% if lost %}<p class="small"><b>Linked lost report:</b> <a href="{{ url_for('item_details', code=lost.item_id) }}">{{ lost.name }} ({{ lost.item_id }})</a><br>Their private details: {{ lost.private_identifying_details or 'None' }}</p>{% endif %}</div>
+      </div>
+      {% if claim.verification_notes %}<div class="card"><h3>{{ icon('file', 20) }} Verification notes</h3><p style="white-space:pre-wrap;margin:0">{{ claim.verification_notes }}</p></div>{% endif %}
+      {% if others %}<div class="notice">{{ icon('info', 18) }}<span class="small">{{ others|length }} other claim(s) exist for this item (water bottles and other identical items often attract several). Compare them before verifying.</span></div>{% endif %}
+    </div>
+
+    <div class="stack">
+      {% if claim.verification_status in ('Handed Over',) %}
+        <div class="notice good">{{ icon('check-circle', 18) }}<span>Handed over. See <a href="{{ url_for('handovers') }}">handover history</a>.</span></div>
+      {% elif claim.verification_status == 'Rejected' %}
+        <div class="notice">{{ icon('info', 18) }}<span>This claim was not verified. Rejected claims are not accusations. Review the notes if a complaint arrives.</span></div>
+      {% else %}
+      <form class="card" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <h3>{{ icon('shield', 20) }} Decision</h3>
+        <div class="field"><label for="officer_id">Officer ID</label><input id="officer_id" name="officer_id" type="text" required maxlength="20" style="text-transform:uppercase"></div>
+        <div class="field"><label for="notes">Notes</label><textarea id="notes" name="notes" style="min-height:80px" placeholder="What you checked, what matched, what is missing"></textarea></div>
+        {% if claim.verification_status in ('Pending Review','More Info Requested') %}
+        <label class="check" style="margin-bottom:1rem"><input type="checkbox" name="physical_check"> I compared these details with the physical item</label>{% endif %}
+        <div class="stack">
+          {% if claim.verification_status in ('Pending Review','More Info Requested') %}
+            <button class="btn btn-success btn-block" type="submit" formaction="{{ url_for('claim_action', claim_id=claim.id, action='verify') }}">{{ icon('check', 18) }} Verify Ownership</button>
+            <button class="btn btn-warn btn-block" type="submit" formaction="{{ url_for('claim_action', claim_id=claim.id, action='request_info') }}">{{ icon('alert', 18) }} Request Additional Verification</button>
+          {% endif %}
+          {% if claim.verification_status == 'Ownership Verified' %}
+            <button class="btn btn-success btn-block" type="submit" formaction="{{ url_for('claim_action', claim_id=claim.id, action='approve') }}">{{ icon('check-circle', 18) }} Approve Claim</button>
+          {% endif %}
+          {% if claim.verification_status in ('Pending Review','More Info Requested','Ownership Verified') %}
+            <button class="btn btn-danger btn-block" type="submit" formaction="{{ url_for('claim_action', claim_id=claim.id, action='reject') }}">{{ icon('x', 18) }} Reject Claim</button>
+          {% endif %}
+          <button class="btn btn-ghost btn-block" type="submit" formaction="{{ url_for('claim_action', claim_id=claim.id, action='dispute') }}">{{ icon('gavel', 18) }} Mark as disputed</button>
+        </div>
+        {% if claim.verification_status == 'Approved' %}<div class="notice good" style="margin-top:1rem">{{ icon('check-circle', 18) }}<span class="small">Approved. Continue on the <a href="{{ url_for('handovers') }}">Handovers</a> page.</span></div>{% endif %}
+      </form>
+      {% endif %}
+      <div class="card"><h3>{{ icon('clock', 20) }} Item history</h3>
+        <ul class="list-plain">{% for h in history %}<li><div>{{ h.action }}{% if h.detail %}<br><span class="muted small">{{ h.detail }}</span>{% endif %}<br><span class="muted small">{{ h.created_at|nice_dt }}</span></div></li>{% endfor %}</ul></div>
+    </div>
+  </div>
+{% else %}
+  <div class="page-head"><div><h1>Ownership verification</h1><p>Review claims, request more details, then approve or reject.</p></div>
+    <form method="get" class="row"><select name="status" aria-label="Filter by status"><option value="">All claims</option>{% for s in CLAIM_STATUSES %}<option {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}</select><button class="btn btn-primary" type="submit">Filter</button></form></div>
+  {% if claims %}
+  <div class="card card-flush"><div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Claimant</th><th>Claimed</th><th>Claim status</th><th></th></tr></thead>
+    <tbody>{% for c in claims %}<tr><td><b>{{ c.item_name }}</b> <span class="code">{{ c.code }}</span></td><td>{{ c.claimant_name }}</td><td>{{ c.claim_date|nice_dt }}</td><td><span class="badge b-orange">{{ c.verification_status }}</span></td>
+      <td><a class="btn btn-primary btn-sm" href="{{ url_for('verification_detail', claim_id=c.id) }}">Open</a></td></tr>{% endfor %}</tbody></table></div></div>
+  {% else %}{% call empty_state('shield', 'No claims yet', 'When a student claims an item held at the office, it will appear here for verification.') %}{% endcall %}{% endif %}
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, thumb %}
+{% block title %}Claim · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+{% if claim %}
+  <div class="page-head"><div><h1>Your claim</h1><p>{{ claim.item_name }} <span class="code">{{ claim.code }}</span></p></div><span class="badge b-orange" style="font-size:.9rem">{{ claim.verification_status }}</span></div>
+  <div class="grid split">
+    <div class="stack">
+      <div class="card"><h3>{{ icon('lock', 20) }} Details you submitted</h3><p style="white-space:pre-wrap">{{ claim.private_details }}</p><p class="muted small" style="margin:0">Only you and college staff can see this.</p></div>
+      {% if claim.verification_status in ('More Info Requested','Pending Review') %}
+      <div class="card">
+        {% if claim.verification_status == 'More Info Requested' %}<div class="notice warn" style="margin-bottom:1rem">{{ icon('alert', 18) }}<span>College staff asked for more identifying details. Please add them below.</span></div>{% endif %}
+        <h3>Add more identifying details</h3>
+        <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <div class="field"><textarea name="more_details" required maxlength="1000" placeholder="Stickers, scratches, initials, contents, anything only the owner would know"></textarea></div>
+          <button class="btn btn-primary" type="submit">Send to college staff</button></form>
+      </div>{% endif %}
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>What happens next</h3>
+        <ul class="role-list">
+          <li>{{ icon('check', 17) }} Staff compare your details with the physical item</li>
+          <li>{{ icon('check', 17) }} They may ask for more details</li>
+          <li>{{ icon('check', 17) }} If verified, collect it from {{ claim.storage_location or 'the college office' }} with your college ID</li>
+        </ul>
+        {% if claim.verification_status == 'Rejected' %}<div class="notice" style="margin-top:1rem">{{ icon('info', 18) }}<span class="small">This claim could not be verified. This is not an accusation. You can contact the college office if you have more details.</span></div>{% endif %}
+        {% if claim.verification_status == 'Handed Over' %}<div class="notice good" style="margin-top:1rem">{{ icon('check-circle', 18) }}<span class="small">Item returned. It is saved in your item history.</span></div>{% endif %}
+      </div>
+      <a class="btn btn-ghost" href="{{ url_for('item_details', code=claim.code) }}">View item</a>
+    </div>
+  </div>
+{% else %}
+  <div class="page-head"><div><h1>Claim this item</h1><p>Tell staff what only the real owner would know.</p></div></div>
+  <div class="grid split">
+    <form class="card" method="post" novalidate><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field"><label for="private_details">Private identifying details</label>
+        <textarea id="private_details" name="private_details" required minlength="15" maxlength="1000" placeholder="Stickers, scratches, initials, cap type, accessories, or items inside">{{ form.get('private_details','') }}</textarea>
+        <div class="hint">Do not just repeat the public description. Staff compare this with the physical item.</div></div>
+      <div class="field"><label for="lost_item_id">Your lost report that matches this item</label>
+        <select id="lost_item_id" name="lost_item_id" required>{% for l in my_lost %}<option value="{{ l.id }}">{{ l.name }} ({{ l.item_id }})</option>{% endfor %}</select></div>
+      <button class="btn btn-warn" type="submit">{{ icon('shield', 18) }} Submit claim</button>
+    </form>
+    <div class="card"><div class="detail-img" style="margin-bottom:1rem">{{ thumb(item.image_path, 44) }}</div>
+      <h3 style="margin-bottom:.3rem">{{ item.name }}</h3><p class="muted small">{{ item.item_id }}</p>
+      <div class="notice warn">{{ icon('alert', 18) }}<span class="small">A claim does not guarantee handover. College staff verify ownership first.</span></div></div>
+  </div>
+{% endif %}
+</div>
+{% endblock %}

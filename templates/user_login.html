@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}User · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <span class="brand-mark">{{ icon('user', 22) }}</span>
+    <h1>Student sign in</h1>
+    <p class="muted">Enter your name and USN. If you are new, your account is created automatically.</p>
+    <form method="post" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="field"><label for="name">Your name</label><input id="name" name="name" type="text" required maxlength="80" autocomplete="name" value="{{ form.get('name','') }}" placeholder="Full name"></div>
+      <div class="field"><label for="usn">Your USN</label><input id="usn" name="usn" type="text" required maxlength="15" style="text-transform:uppercase" autocomplete="off" value="{{ form.get('usn','') }}" placeholder="University seat number"><div class="hint">Your USN is private. It is never shown to other students.</div></div>
+      <button class="btn btn-primary btn-block" type="submit">Continue</button>
+    </form>
+    <p class="small muted" style="margin:1rem 0 0"><a href="{{ url_for('index') }}">Back to home</a> · College staff: <a href="{{ url_for('admin_login') }}">Admin login</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, thumb, report_buttons %}
+{% block title %}Messages · Campus Lost & Found{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Messages</h1><p>Secure chats between owners and finders of potential matches.</p></div></div>
+
+  {% if not convs %}
+    <div class="empty"><div class="ico">{{ icon('message', 30) }}</div><h3>No conversations yet</h3>
+      <p>A chat opens automatically when the AI finds a match of 20% or more between a lost and a found item.</p>
+      <div class="row"><a class="btn btn-primary" href="{{ url_for('matches_page') }}">{{ icon('sparkle', 18) }} View AI matches</a>{{ report_buttons() }}</div></div>
+  {% else %}
+  <div class="chat-layout">
+    <div class="card convs">
+      <div class="card-head"><h3>Enquiries</h3></div>
+      <div class="conv-list">
+        {% for c in convs %}
+        <a class="conv {{ 'active' if current and current.id == c.id }}" href="{{ url_for('chat', enquiry_id=c.id) }}">
+          <b>{{ c.f_name if c.finder_id != me.id else c.l_name }}</b>
+          <span class="muted small">{{ 'You are the owner' if c.owner_id == me.id else 'You are the finder' }}</span><br>
+          <span class="badge b-blue" style="margin-top:.3rem">{{ c.status }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if current %}
+    <div class="card pane">
+      <div class="card-head"><h3>{{ current.l_name }} ↔ {{ current.f_name }}</h3><span class="code">{{ current.l_code }} · {{ current.f_code }}</span></div>
+      {% set other_name = current.finder_name if current.owner_id == me.id else current.owner_name %}
+      <div class="messages" id="messages" data-enquiry="{{ current.id }}" data-other="{{ other_name }}" data-last="{{ msgs[-1].id if msgs else 0 }}">
+        {% if not msgs %}<p class="muted empty-chat" style="text-align:center;margin:auto">No messages yet. Say hello and describe the item.</p>{% endif %}
+        {% for m in msgs %}
+        <div class="bubble {{ 'mine' if m.sender_id == me.id else 'theirs' }}" data-id="{{ m.id }}"><span class="who">{{ 'You' if m.sender_id == me.id else other_name }}</span>{{ m.message }}<time>{{ m.created_at|nice_dt }}</time></div>
+        {% endfor %}
+      </div>
+      <form class="composer" id="composer" method="post" action="{{ url_for('chat_send', enquiry_id=current.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="text" name="message" maxlength="1000" placeholder="Type a message" autocomplete="off" required aria-label="Message">
+        <button class="btn btn-primary" type="submit">{{ icon('send', 18) }} Send</button>
+      </form>
+    </div>
+
+    <aside class="card chat-side" aria-label="Enquiry details">
+      <h3>Enquiry details</h3>
+      <p><span class="badge b-blue">{{ current.status }}</span></p>
+      {% set other_is_finder = current.owner_id == me.id %}
+      <dl class="dl" style="grid-template-columns:1fr;gap:.1rem">
+        <dt>Lost report</dt><dd>{{ current.l_name }} <span class="code">{{ current.l_code }}</span></dd>
+        <dt style="margin-top:.6rem">Found report</dt><dd>{{ current.f_name }} <span class="code">{{ current.f_code }}</span></dd>
+        <dt style="margin-top:.6rem">Owner (lost item)</dt><dd>{{ current.owner_name }}{{ ' (you)' if current.owner_id == me.id }}</dd>
+        <dt style="margin-top:.6rem">Finder</dt><dd>{{ current.finder_name }}{{ ' (you)' if current.finder_id == me.id }}</dd>
+      </dl>
+      <p class="small muted" style="margin-top:.8rem">This chat opened because the AI found a match of 20% or more. USNs stay private. Only college staff can see them.</p>
+      <div class="stack" style="margin-top:1rem">
+        <a class="btn btn-ghost btn-sm btn-block" href="{{ url_for('item_details', code=current.f_code) }}">View found item</a>
+        <a class="btn btn-ghost btn-sm btn-block" href="{{ url_for('item_details', code=current.l_code) }}">View lost item</a>
+        {% if current.status == 'Open' %}
+        <form method="post" action="{{ url_for('chat_office', enquiry_id=current.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="btn btn-navy btn-sm btn-block" type="submit">{{ icon('building', 16) }} Arrange office deposit</button></form>
+        {% endif %}
+      </div>
+
+      <div class="exchange-box">
+        <h4>{{ icon('hand', 18) }} Return the item directly</h4>
+        {% if exchange and exchange.status == 'Completed' %}
+          <p class="small"><span class="badge b-green-solid">Returned to owner</span></p>
+          <p class="small muted" style="margin:.4rem 0 0">Handed over and confirmed on {{ exchange.completed_at|nice_dt }}.</p>
+        {% elif current.status != 'Open' %}
+          <p class="small muted" style="margin:0">Not available for this enquiry.</p>
+        {% elif exchange and exchange.status == 'Awaiting Owner' %}
+          {% if current.owner_id == me.id %}
+            <p class="small"><b>{{ current.finder_name }}</b> says the item was handed to you.</p>
+            <form method="post" action="{{ url_for('chat_exchange', enquiry_id=current.id, action='confirm') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <label class="check small"><input type="checkbox" name="physical" required> I have the item in my hands</label>
+              <button class="btn btn-success btn-sm btn-block" type="submit" style="margin-top:.5rem">{{ icon('check-circle', 16) }} Confirm I received it</button></form>
+            <form method="post" action="{{ url_for('chat_exchange', enquiry_id=current.id, action='decline') }}" style="margin-top:.4rem"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button class="btn btn-ghost btn-sm btn-block" type="submit">Not received yet</button></form>
+          {% else %}
+            <p class="small"><span class="badge b-orange">Waiting for owner</span></p>
+            <p class="small muted" style="margin:.4rem 0 0">The owner must confirm that they received the item.</p>
+          {% endif %}
+        {% else %}
+          {% if current.finder_id == me.id %}
+            <p class="small muted">Met the owner and gave the item back? Mark it here. The owner then confirms.</p>
+            <form method="post" action="{{ url_for('chat_exchange', enquiry_id=current.id, action='handed') }}" data-confirm="Only press OK if you have really given the item to its owner."><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button class="btn btn-success btn-sm btn-block" type="submit">{{ icon('hand', 16) }} I handed it to the owner</button></form>
+          {% else %}
+            <p class="small muted" style="margin:0">Meet the finder in a public place on campus. The finder marks the item as handed over and you confirm it here.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      <div class="notice warn" style="margin-top:1rem">{{ icon('alert', 18) }}<span class="small">Do not share phone numbers. Collect through authorised college staff so ownership can be verified.</span></div>
+    </aside>
+    {% else %}
+    <div class="card pane" style="grid-column: span 2"><div class="empty" style="border:0;margin:auto"><div class="ico">{{ icon('message', 30) }}</div><h3>Select a conversation</h3><p>Choose an enquiry on the left to read and reply.</p></div></div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

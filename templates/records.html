@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, empty_state %}
+{% block title %}Item records · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>Item records</h1><p>The saved trail of every item that reached the office: who deposited it, who received it, who claimed it and who it was given to.</p></div>
+    <a class="btn btn-ghost" href="{{ url_for('records_csv', q=q) }}">{{ icon('file', 18) }} Download CSV</a></div>
+  <form class="card" method="get" style="margin-bottom:1.4rem" role="search"><div class="row">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search by Item ID, item name or any USN (finder, claimant, receiver)" style="flex:1;min-width:240px" aria-label="Search records">
+    <button class="btn btn-primary" type="submit">{{ icon('search', 18) }} Search</button></div></form>
+  {% if rows %}
+  <div class="card card-flush"><div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Finder USN</th><th>Received</th><th>Claims</th><th>Given to (USN)</th><th>Given at</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><b>{{ r.name }}</b><br><span class="code">{{ r.code }}</span></td>
+      <td>{{ r.finder_usn }}</td>
+      <td>{{ r.received_date }} {{ r.received_time }}<br><span class="muted small">Officer {{ r.received_officer }} · {{ r.storage_location }}</span></td>
+      <td>{{ r.claim_count }}</td>
+      <td>{{ r.receiver_usn or '-' }}{% if r.given_officer %}<br><span class="muted small">Officer {{ r.given_officer }}</span>{% endif %}</td>
+      <td>{{ r.given_at or '-' }}</td>
+      <td>{{ badge(r.status) }}</td>
+      <td><a class="btn btn-primary btn-sm" href="{{ url_for('record_detail', code=r.code) }}">Full record</a></td></tr>{% endfor %}</tbody></table></div></div>
+  {% elif q %}
+    {% call empty_state('search', 'No records match', 'Try an Item ID or a USN.') %}<a class="btn btn-ghost" href="{{ url_for('records') }}">Clear search</a>{% endcall %}
+  {% else %}
+    {% call empty_state('file', 'No records yet', 'When you receive an item at the office, its record is saved here and updated at every step until it is given to the owner.') %}<a class="btn btn-primary" href="{{ url_for('office_register') }}">Receive item</a>{% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

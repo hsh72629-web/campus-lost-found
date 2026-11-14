@@ -1,0 +1,72 @@
+{% from "_macros.html" import icon %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Campus Lost & Found AI Matcher{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-page="{{ request.endpoint or '' }}" data-role="{{ me.role if me else '' }}" data-uid="{{ me.id if me else '' }}" data-msg-max="{{ msg_max }}">
+{% set ep = request.endpoint or '' %}
+<header class="nav">
+  <div class="container nav-in">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark">{{ icon('search', 20) }}</span> Campus Lost &amp; Found
+    </a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">{{ icon('menu', 20) }}</button>
+    <nav class="nav-links" aria-label="Main">
+      {% if me and me.role == 'student' %}
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if ep == 'dashboard' }}">{{ icon('home', 17) }} Home</a>
+        <a href="{{ url_for('my_reports') }}" class="{{ 'active' if ep == 'my_reports' }}">{{ icon('list', 17) }} My reports</a>
+        <a href="{{ url_for('matches_page') }}" class="{{ 'active' if ep == 'matches_page' }}">{{ icon('sparkle', 17) }} AI matches</a>
+        <a href="{{ url_for('chat') }}" class="{{ 'active' if ep == 'chat' }}">{{ icon('message', 17) }} Messages</a>
+        <a href="{{ url_for('notifications') }}" class="{{ 'active' if ep == 'notifications' }}">{{ icon('bell', 17) }} Alerts
+          {% if unread_count %}<span class="nav-badge">{{ unread_count }}</span>{% endif %}</a>
+        <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="linkish" type="submit">{{ icon('logout', 17) }} Log out</button></form>
+      {% elif me and me.role == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if ep == 'admin_dashboard' }}">{{ icon('grid', 17) }} Dashboard</a>
+        <a href="{{ url_for('admin_items') }}" class="{{ 'active' if ep == 'admin_items' }}">{{ icon('list', 17) }} Reports</a>
+        <a href="{{ url_for('office_register') }}" class="{{ 'active' if ep == 'office_register' }}">{{ icon('building', 17) }} Receive item</a>
+        <a href="{{ url_for('verification_list') }}" class="{{ 'active' if ep in ('verification_list','verification_detail') }}">{{ icon('shield', 17) }} Claims</a>
+        <a href="{{ url_for('handovers') }}" class="{{ 'active' if ep == 'handovers' }}">{{ icon('clipboard', 17) }} Give item</a>
+        <a href="{{ url_for('records') }}" class="{{ 'active' if ep in ('records','record_detail') }}">{{ icon('file', 17) }} Records</a>
+        <a href="{{ url_for('profile') }}" class="{{ 'active' if ep == 'profile' }}">{{ icon('user', 17) }} Profile</a>
+        <form method="post" action="{{ url_for('admin_logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="linkish" type="submit">{{ icon('logout', 17) }} Log out</button></form>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="{{ 'active' if ep == 'login' }}">{{ icon('user', 17) }} User</a>
+        <a href="{{ url_for('admin_login') }}" class="{{ 'active' if ep == 'admin_login' }}">{{ icon('shield', 17) }} Admin</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flashes" role="status">
+    {% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ icon('check-circle' if cat == 'success' else 'alert', 18) }}<span>{{ msg }}</span></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer class="footer">
+  <div class="container">
+    <span>Campus Lost &amp; Found AI Matcher. Find lost items. Connect students. Verify. Recover.</span>
+    <span>AI suggests matches. College staff verify ownership.</span>
+  </div>
+</footer>
+<div class="toast-wrap" id="toasts" aria-live="polite"></div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Office item registration · Admin{% endblock %}
+{% block content %}
+<div class="container page">
+  <div class="page-head"><div><h1>College office item registration</h1><p>Record every item a finder deposits. This makes it available for ownership verification.</p></div></div>
+  <div class="grid split">
+    <form class="card" method="post" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="grid g2">
+        <div class="field"><label for="item_id">Item ID</label><input id="item_id" name="item_id" type="text" value="{{ prefill.get('item_id','') }}" placeholder="e.g. LF-2026-001"><div class="hint">Leave empty for a walk-in item that has no online report.</div></div>
+        <div class="field"><label for="finder_usn">Finder USN</label><input id="finder_usn" name="finder_usn" type="text" required maxlength="15" style="text-transform:uppercase" value="{{ prefill.get('finder_usn','') }}"></div>
+      </div>
+      <div class="grid g2">
+        <div class="field"><label for="officer_id">Officer ID</label><input id="officer_id" name="officer_id" type="text" required maxlength="20" style="text-transform:uppercase" value="{{ prefill.get('officer_id','') }}"></div>
+        <div class="field"><label for="storage_location">Storage location</label><select id="storage_location" name="storage_location" required><option value="">Choose a location</option>{% for l in STORAGE_LOCATIONS %}<option {{ 'selected' if prefill.get('storage_location') == l }}>{{ l }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="grid g2">
+        <div class="field"><label for="received_date">Received date</label><input id="received_date" name="received_date" type="date" required max="{{ today }}" value="{{ prefill.get('received_date', today) }}"></div>
+        <div class="field"><label for="received_time">Received time</label><input id="received_time" name="received_time" type="time" required value="{{ prefill.get('received_time', now_time) }}"></div>
+      </div>
+
+      <details {{ 'open' if (prefill.get('item_name') or not prefill.get('item_id')) }} style="margin-bottom:1rem">
+        <summary style="cursor:pointer;font-weight:600;color:var(--navy);margin-bottom:.8rem">Walk-in item details (only when there is no Item ID)</summary>
+        <div class="grid g2">
+          <div class="field"><label for="item_name">Item name</label><input id="item_name" name="item_name" type="text" maxlength="80" value="{{ prefill.get('item_name','') }}"></div>
+          <div class="field"><label for="category">Category</label><select id="category" name="category"><option value="">Choose a category</option>{% for c in CATEGORIES %}<option {{ 'selected' if prefill.get('category') == c }}>{{ c }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="field"><label for="item_description">Item description</label><textarea id="item_description" name="item_description" maxlength="1000" style="min-height:70px">{{ prefill.get('item_description','') }}</textarea></div>
+        <div class="grid g2">
+          <div class="field"><label for="color">Color</label><input id="color" name="color" type="text" maxlength="40" value="{{ prefill.get('color','') }}"></div>
+          <div class="field"><label for="brand">Brand</label><input id="brand" name="brand" type="text" maxlength="60" value="{{ prefill.get('brand','') }}"></div>
+        </div>
+        <div class="field"><label for="distinctive_features">Distinctive features (staff only)</label><textarea id="distinctive_features" name="distinctive_features" maxlength="500" style="min-height:60px">{{ prefill.get('distinctive_features','') }}</textarea></div>
+      </details>
+
+      <div class="field"><span class="lbl-text">Item photograph</span>
+        <div class="upload"><input type="file" name="photo" accept="image/png,image/jpeg,image/webp" data-preview="#preview" aria-label="Upload item photograph"><img id="preview" class="hide" alt="Photo preview"></div></div>
+      <div class="field"><label>Status</label><input type="text" value="Deposited at Office" readonly></div>
+      <button class="btn btn-primary" type="submit">{{ icon('building', 18) }} Mark Reached Office</button>
+    </form>
+
+    <div class="stack">
+      <div class="card"><h3>What happens next</h3>
+        <ul class="role-list">
+          <li>{{ icon('check', 17) }} Status becomes “Deposited at Office”</li>
+          <li>{{ icon('check', 17) }} Possible owners are notified</li>
+          <li>{{ icon('check', 17) }} Students can submit ownership claims</li>
+        </ul></div>
+      <div class="card card-flush"><div class="card-head"><h3>Recently registered</h3></div>
+        {% if recent %}<ul class="list-plain" style="padding:0 1.35rem">{% for r in recent %}<li><div><a href="{{ url_for('item_details', code=r.code) }}"><b>{{ r.name }}</b></a> <span class="code">{{ r.code }}</span><br><span class="muted small">{{ r.storage_location }} · {{ r.received_date }} {{ r.received_time }}</span></div></li>{% endfor %}</ul>
+        {% else %}<div class="card-body"><p class="muted" style="margin:0">Nothing has been registered yet.</p></div>{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
